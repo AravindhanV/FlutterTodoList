@@ -1,7 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutterworkshop/listview.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+import 'dart:io' show Platform;
 
 class AddTask extends StatefulWidget {
   @override
@@ -73,8 +75,8 @@ class _AddTaskState extends State<AddTask> {
                   child: Form(
                     child: Column(
                       children: <Widget>[
-                        CustomTextField("Title", 1,_title),
-                        CustomTextField("Description", 5,_description),
+                        CustomTextField("Title", 1, _title),
+                        CustomTextField("Description", 5, _description),
                         Padding(
                           padding: const EdgeInsets.only(top: 30.0, left: 12),
                           child: Row(
@@ -85,35 +87,9 @@ class _AddTaskState extends State<AddTask> {
                                   color: Colors.white,
                                 ),
                               ),
-                              GestureDetector(
-                                onTap: () => _chooseDate(context),
-                                child: Container(
-                                  child: Row(
-                                    children: <Widget>[
-                                      Padding(
-                                        padding:
-                                            const EdgeInsets.only(left: 10.0),
-                                        child: Icon(
-                                          Icons.calendar_today,
-                                          size: 30,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: EdgeInsets.only(
-                                          left: 10,
-                                        ),
-                                        child: Text(
-                                          datestr,
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
+                              Platform.isIOS
+                                  ? showAndroidPicker(context)
+                                  : showIOSPicker(),
                             ],
                           ),
                         )
@@ -143,21 +119,60 @@ class _AddTaskState extends State<AddTask> {
     );
   }
 
-  Future<void> insertTask(BuildContext context) async{
+  Widget showIOSPicker() {
+    return CupertinoDatePicker(
+      mode: CupertinoDatePickerMode.date,
+      onDateTimeChanged: (date) {},
+    );
+  }
+
+  Widget showAndroidPicker(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _chooseAndroidDate(context),
+      child: Container(
+        child: Row(
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.only(left: 10.0),
+              child: Icon(
+                Icons.calendar_today,
+                size: 30,
+                color: Colors.white,
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.only(
+                left: 10,
+              ),
+              child: Text(
+                datestr,
+                style: TextStyle(
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> insertTask(BuildContext context) async {
     String title = _title.text;
     String description = _description.text;
     print(datestr);
-    Task t = Task(title: title,description: description,date: datestr);
+    Task t = Task(title: title, description: description, date: datestr);
 
     final Database db = await database;
-    await db.rawInsert("insert into tasks (title,description,date) values ('${t.title}','${t.description}','${t.date}')");
+    await db.rawInsert(
+        "insert into tasks (title,description,date) values ('${t.title}','${t.description}','${t.date}')");
     // await db.insert('tasks',t.toMap());
     print("Popping");
     Navigator.pop(context);
     print("Popped");
   }
 
-  _chooseDate(BuildContext context) async {
+  _chooseAndroidDate(BuildContext context) async {
     DateTime chosen = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -186,7 +201,8 @@ class _AddTaskState extends State<AddTask> {
     setState(() {});
   }
 
-  Widget CustomTextField(String s, int lines,TextEditingController controller) {
+  Widget CustomTextField(
+      String s, int lines, TextEditingController controller) {
     return Padding(
       padding: const EdgeInsets.only(top: 20),
       child: TextFormField(
